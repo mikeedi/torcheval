@@ -12,6 +12,35 @@ from torcheval.utils.test_utils.metric_class_tester import MetricClassTester
 
 
 class TestWordInformationLost(MetricClassTester):
+    def test_word_information_lost_accumulates_correct_counts(self) -> None:
+        metric = WordInformationLost()
+        metric.update("sat the cat", "the cat sat")
+        torch.testing.assert_close(
+            metric.state_dict()["correct_total"],
+            torch.tensor(2.0, dtype=torch.float64),
+        )
+        torch.testing.assert_close(
+            metric.compute(), torch.tensor(5 / 9, dtype=torch.float64)
+        )
+
+        metric.update("hello", "hello world")
+        torch.testing.assert_close(
+            metric.state_dict()["correct_total"],
+            torch.tensor(3.0, dtype=torch.float64),
+        )
+        torch.testing.assert_close(
+            metric.compute(), torch.tensor(11 / 20, dtype=torch.float64)
+        )
+
+        first = WordInformationLost().update("sat the cat", "the cat sat")
+        second = WordInformationLost().update("hello", "hello world")
+        first.merge_state([second])
+        torch.testing.assert_close(
+            first.state_dict()["correct_total"],
+            torch.tensor(3.0, dtype=torch.float64),
+        )
+        torch.testing.assert_close(first.compute(), metric.compute())
+
     def test_word_information_lost(self) -> None:
         self.run_class_implementation_tests(
             metric=WordInformationLost(),
