@@ -17,7 +17,7 @@ class TestWordInformationLost(MetricClassTester):
         metric.update("sat the cat", "the cat sat")
         torch.testing.assert_close(
             metric.state_dict()["correct_total"],
-            torch.tensor(2.0, dtype=torch.float64),
+            torch.tensor(-2.0, dtype=torch.float64),
         )
         torch.testing.assert_close(
             metric.compute(), torch.tensor(5 / 9, dtype=torch.float64)
@@ -26,7 +26,7 @@ class TestWordInformationLost(MetricClassTester):
         metric.update("hello", "hello world")
         torch.testing.assert_close(
             metric.state_dict()["correct_total"],
-            torch.tensor(3.0, dtype=torch.float64),
+            torch.tensor(-3.0, dtype=torch.float64),
         )
         torch.testing.assert_close(
             metric.compute(), torch.tensor(11 / 20, dtype=torch.float64)
@@ -37,9 +37,32 @@ class TestWordInformationLost(MetricClassTester):
         first.merge_state([second])
         torch.testing.assert_close(
             first.state_dict()["correct_total"],
-            torch.tensor(3.0, dtype=torch.float64),
+            torch.tensor(-3.0, dtype=torch.float64),
         )
         torch.testing.assert_close(first.compute(), metric.compute())
+
+    def test_word_information_lost_loads_legacy_state(self) -> None:
+        metric = WordInformationLost()
+        # Legacy state after update("hello", "hello world").
+        metric.load_state_dict(
+            {
+                "correct_total": torch.tensor(-1.0, dtype=torch.float64),
+                "target_total": torch.tensor(2.0, dtype=torch.float64),
+                "preds_total": torch.tensor(1.0, dtype=torch.float64),
+            }
+        )
+        torch.testing.assert_close(
+            metric.compute(), torch.tensor(1 / 2, dtype=torch.float64)
+        )
+
+        metric.update("sat the cat", "the cat sat")
+        torch.testing.assert_close(
+            metric.state_dict()["correct_total"],
+            torch.tensor(-3.0, dtype=torch.float64),
+        )
+        torch.testing.assert_close(
+            metric.compute(), torch.tensor(11 / 20, dtype=torch.float64)
+        )
 
     def test_word_information_lost(self) -> None:
         self.run_class_implementation_tests(

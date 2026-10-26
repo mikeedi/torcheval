@@ -32,7 +32,9 @@ def _wil_update(
         "Arguments must contain the same number of strings, "
         f"but got len(input)={len(input)} and len(target)={len(target)}"
     )
-    return _get_correct_and_totals(input, target)
+    correct_total, target_total, preds_total = _get_correct_and_totals(input, target)
+    # Preserve the negative match count used by saved WordInformationLost states.
+    return -correct_total, target_total, preds_total
 
 
 def _wil_compute(
